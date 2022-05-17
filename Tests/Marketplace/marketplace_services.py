@@ -1438,6 +1438,7 @@ class Pack(object):
         task_status = False
         not_updated_build = False
         release_notes_dir = os.path.join(self._pack_path, Pack.RELEASE_NOTES)
+        logging.info(f'{release_notes_dir=}')
 
         modified_rn_files_paths = modified_rn_files_paths if modified_rn_files_paths else []
 
