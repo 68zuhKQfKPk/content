@@ -2914,7 +2914,9 @@ class Pack(object):
         if not os.path.exists(release_notes_dir):
             return
         for file in filter_dir_files_by_extension(release_notes_dir, '.md'):
-            pr_numbers = get_pull_request_numbers_from_file(f"{self.path}/{release_notes_dir}/{file}")
+            file_name = f"Packs/{self.name}/{release_notes_dir}/{file}"
+            logging.info(f"{file_name=}")
+            pr_numbers = get_pull_request_numbers_from_file(file_name)
             version = underscore_file_name_to_dotted_version(file)
 
             entry = changelog.get(version)
