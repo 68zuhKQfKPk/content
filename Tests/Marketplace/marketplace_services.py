@@ -25,7 +25,7 @@ from google.cloud import storage
 
 import Tests.Marketplace.marketplace_statistics as mp_statistics
 from Tests.Marketplace.marketplace_constants import PackFolders, Metadata, GCPConfig, BucketUploadFlow, PACKS_FOLDER, \
-    PackTags, PackIgnored, Changelog, BASE_PACK_DEPENDENCY_DICT, SIEM_RULES_OBJECTS, PackStatus
+    PackTags, PackIgnored, Changelog, BASE_PACK_DEPENDENCY_DICT, SIEM_RULES_OBJECTS, PackStatus, CONTENT_ROOT_PATH
 from Utils.release_notes_generator import aggregate_release_notes_for_marketplace
 from Tests.scripts.utils import logging_wrapper as logging
 
@@ -723,7 +723,7 @@ class Pack(object):
             version_display_name if version_display_name else changelog_entry[Changelog.DISPLAY_NAME].split('-')[0]
         build_number_with_prefix = \
             build_number_with_prefix if build_number_with_prefix else \
-            changelog_entry[Changelog.DISPLAY_NAME].split('-')[1]
+                changelog_entry[Changelog.DISPLAY_NAME].split('-')[1]
 
         changelog_entry[Changelog.RELEASE_NOTES] = release_notes if release_notes else changelog_entry[
             Changelog.RELEASE_NOTES]
@@ -733,7 +733,7 @@ class Pack(object):
         return changelog_entry
 
     def _create_changelog_entry(self, release_notes, version_display_name, build_number,
-                                new_version=True, initial_release=False):
+                                new_version=True, initial_release=False, pull_request_number=None):
         """ Creates dictionary entry for changelog.
 
         Args:
@@ -1365,7 +1365,7 @@ class Pack(object):
         if len(pack_versions_dict) > 1:
             # In case that there is more than 1 new release notes file, wrap all release notes together for one
             # changelog entry
-            aggregation_str = f"[{', '.join(str(lv) for lv in found_versions if lv > changelog_latest_rn_version)}]"\
+            aggregation_str = f"[{', '.join(str(lv) for lv in found_versions if lv > changelog_latest_rn_version)}]" \
                               f" => {latest_release_notes_version_str}"
             logging.info(f"Aggregating ReleaseNotes versions: {aggregation_str}")
             release_notes_lines = aggregate_release_notes_for_marketplace(pack_versions_dict)
@@ -1539,6 +1539,7 @@ class Pack(object):
 
             # Update change log entries with BC flag.
             self.add_bc_entries_if_needed(release_notes_dir, changelog)
+            add_pull_request_number_to_changelog(release_notes_dir, changelog)
 
             # write back changelog with changes to pack folder
             with open(os.path.join(self._pack_path, Pack.CHANGELOG_JSON), "w") as pack_changelog:
@@ -1998,8 +1999,10 @@ class Pack(object):
             self._legacy = self.user_metadata.get(Metadata.LEGACY, True)
             self._create_date = self._get_pack_creation_date(index_folder_path)
             self._update_date = self._get_pack_update_date(index_folder_path)
-            self._use_cases = input_to_list(input_data=self.user_metadata.get(Metadata.USE_CASES), capitalize_input=True)
-            self._categories = input_to_list(input_data=self.user_metadata.get(Metadata.CATEGORIES), capitalize_input=True)
+            self._use_cases = input_to_list(input_data=self.user_metadata.get(Metadata.USE_CASES),
+                                            capitalize_input=True)
+            self._categories = input_to_list(input_data=self.user_metadata.get(Metadata.CATEGORIES),
+                                             capitalize_input=True)
             self._keywords = input_to_list(self.user_metadata.get(Metadata.KEY_WORDS))
         self._parsed_dependencies = self._parse_pack_dependencies(self.user_metadata.get(Metadata.DEPENDENCIES, {}),
                                                                   dependencies_metadata_dict)
@@ -2570,7 +2573,8 @@ class Pack(object):
             self._author_image = author_image_storage_path
             return task_status
 
-    def copy_author_image(self, production_bucket, build_bucket, images_data, storage_base_path, build_bucket_base_path):
+    def copy_author_image(self, production_bucket, build_bucket, images_data, storage_base_path,
+                          build_bucket_base_path):
         """ Copies pack's author image from the build bucket to the production bucket
 
         Searches for `Author_image.png`, In case no such image was found, default Base pack image path is used and
@@ -2907,6 +2911,24 @@ class Pack(object):
 
 
 # HELPER FUNCTIONS
+
+
+def get_pull_request_numbers_from_file(file) -> List[int]:
+    log_info = git.Git(CONTENT_ROOT_PATH).log(f' -- {file}')
+    logging.info(f'found git log {log_info}')
+    return [1]
+
+
+def add_pull_request_number_to_changelog(release_notes_dir, changelog):
+    if not os.path.exists(release_notes_dir):
+        return
+    for file in filter_dir_files_by_extension(release_notes_dir, '.md'):
+        pr_numbers = get_pull_request_numbers_from_file(file)
+        version = underscore_file_name_to_dotted_version(file)
+
+        entry = changelog.get(version)
+        logging.info('found entry: ' + json.dumps(entry))
+        entry[Changelog.PULL_REQUEST_NUMBERS] = pr_numbers
 
 
 def get_upload_data(packs_results_file_path: str, stage: str) -> Tuple[dict, dict, dict, dict]:
