@@ -1539,7 +1539,7 @@ class Pack(object):
 
             # Update change log entries with BC flag.
             self.add_bc_entries_if_needed(release_notes_dir, changelog)
-            add_pull_request_number_to_changelog(release_notes_dir, changelog)
+            self.add_pull_request_number_to_changelog(release_notes_dir, changelog)
 
             # write back changelog with changes to pack folder
             with open(os.path.join(self._pack_path, Pack.CHANGELOG_JSON), "w") as pack_changelog:
@@ -2909,6 +2909,17 @@ class Pack(object):
         return {str(bc_ver): bc_version_to_text.get(str(bc_ver)) for bc_ver in breaking_changes_versions if
                 predecessor_version < bc_ver <= rn_version}
 
+    def add_pull_request_number_to_changelog(self, release_notes_dir, changelog):
+        if not os.path.exists(release_notes_dir):
+            return
+        for file in filter_dir_files_by_extension(release_notes_dir, '.md'):
+            pr_numbers = get_pull_request_numbers_from_file(f"{self.path}/{release_notes_dir}/{file}")
+            version = underscore_file_name_to_dotted_version(file)
+
+            entry = changelog.get(version)
+            logging.info('found entry: ' + json.dumps(entry))
+            entry[Changelog.PULL_REQUEST_NUMBERS] = pr_numbers
+
 
 # HELPER FUNCTIONS
 
@@ -2920,16 +2931,7 @@ def get_pull_request_numbers_from_file(file_path) -> List[int]:
     return [1]
 
 
-def add_pull_request_number_to_changelog(release_notes_dir, changelog):
-    if not os.path.exists(release_notes_dir):
-        return
-    for file in filter_dir_files_by_extension(release_notes_dir, '.md'):
-        pr_numbers = get_pull_request_numbers_from_file(os.path.join(release_notes_dir, file))
-        version = underscore_file_name_to_dotted_version(file)
 
-        entry = changelog.get(version)
-        logging.info('found entry: ' + json.dumps(entry))
-        entry[Changelog.PULL_REQUEST_NUMBERS] = pr_numbers
 
 
 def get_upload_data(packs_results_file_path: str, stage: str) -> Tuple[dict, dict, dict, dict]:
