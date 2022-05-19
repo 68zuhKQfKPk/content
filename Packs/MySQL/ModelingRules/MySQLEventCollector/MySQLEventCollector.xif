@@ -1,0 +1,29 @@
+[MODEL: dataset=mysql_raw, model=Audit, content_id=***, version=***]
+| alter XDM_audit_Main_operation_type = json_extract_scalar(_raw_log, ""$.class"")
+| filter XDM_Audit_Main_operation_type = ""audit""
+| alter XDM_Database_time = json_extract_scalar(_raw_log, ""$.timestamp""),
+XDM_Audit_Main_operation_sub_type =  json_extract_scalar(_raw_log, ""$.event""),
+XDM_Audit_audited_resource_id =  json_extract_scalar(_raw_log, ""$.startup_data.server_id""),
+XDM_Audit_audited_resource_type =  json_extract_scalar(_raw_log, ""$.startup_data.os_version""),
+XDM_Audit_audited_resource_sub_type =  json_extract_scalar(_raw_log, ""$.startup_data.mysql_version""),
+XDM_Audit_audited_resource_id =  json_extract_scalar(_raw_log, ""$.shutdown_data.server_id"");
+
+[MODEL: dataset=mysql_raw, model=Auth, content_id=***, version=***]
+| alter XDM_auth_Main_operation_type = json_extract_scalar(_raw_log, ""$.class"")
+| filter XDM_auth_Main_operation_type = ""connection""
+| alter XDM_auth_time = json_extract_scalar(_raw_log, ""$.timestamp""),
+XDM_Auth_user_username = json_extract_scalar(_raw_log, ""$.account.user""),
+XDM_Auth_Client_host = json_extract_scalar(_raw_log, ""$.account.host""),
+XDM_Auth_Target_user = json_extract_scalar(_raw_log, ""$.login.user""),
+XDM_Auth_Target_os = json_extract_scalar(_raw_log, ""$.login.os""),
+XDM_Auth_Target_ipv4 = json_extract_scalar(_raw_log, ""$.login.ip"");
+
+[MODEL: dataset=mysql_raw, model=Database, content_id=***, version=***]
+| alter XDM_database_Main_operation_type = json_extract_scalar(_raw_log, ""$.class"")
+| filter XDM_database_Main_operation_type = ""table_access""
+| alter XDM_Database_time = json_extract_scalar(_raw_log, ""$.timestamp""),
+XDM_Database_Main_name = json_extract_scalar(_raw_log, ""$.table_access_data.db""),
+XDM_Database_Main_tables = json_extract_scalar(_raw_log, ""$.table_access_data.table""),
+XDM_Database_Main_operation = json_extract_scalar(_raw_log, ""$.table_access_data.query""),
+XDM_Database_Main_statement = json_extract_scalar(_raw_log, ""$.table_access_data.sql_command""),
+XDM_Database_Main_connection_id = json_extract_scalar(_raw_log, ""$.connection_id"");
