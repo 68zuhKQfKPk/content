@@ -29,6 +29,8 @@ from Tests.Marketplace.marketplace_constants import PackFolders, Metadata, GCPCo
 from Utils.release_notes_generator import aggregate_release_notes_for_marketplace
 from Tests.scripts.utils import logging_wrapper as logging
 
+pull_request_pattern = '\(#(\d+)\)'
+
 
 class Pack(object):
     """ Class that manipulates and manages the upload of pack's artifact and metadata to cloud storage.
@@ -2931,10 +2933,9 @@ def get_pull_request_numbers_from_file(file_path) -> List[int]:
     logging.info(f"file path {file_path}")
     log_info: str = git.Git(CONTENT_ROOT_PATH).log(file_path)
     logging.info(f'found git log {log_info}')
-    return [1]
-
-
-
+    intlist = [int(i) for i in re.findall(pull_request_pattern, log_info)]
+    logging.info(intlist)
+    return intlist
 
 
 def get_upload_data(packs_results_file_path: str, stage: str) -> Tuple[dict, dict, dict, dict]:
