@@ -2929,7 +2929,7 @@ class Pack(object):
 
 def get_pull_request_numbers_from_file(file_path) -> List[int]:
     logging.info(f"file path {file_path}")
-    log_info = git.Git(CONTENT_ROOT_PATH).log(f' -- {file_path}')
+    log_info: str = git.Git(CONTENT_ROOT_PATH).log(file_path)
     logging.info(f'found git log {log_info}')
     return [1]
 
